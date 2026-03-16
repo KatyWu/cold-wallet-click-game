@@ -56,22 +56,26 @@
       pointer-events: all;
     }
 
-    /* ── Mute button ── */
-    #mute-btn {
+    /* ── Audio controls ── */
+    #audio-controls {
       position: fixed;
       top: 16px; right: 16px;
       z-index: 200;
-      width: 40px; height: 40px;
+      display: flex; gap: 6px;
+    }
+    #audio-controls button {
+      width: 36px; height: 36px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 50%;
-      font-size: 18px;
+      border-radius: 8px;
+      font-size: 15px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.15s, opacity 0.2s;
       line-height: 1;
     }
-    #mute-btn:hover { background: #222; border-color: #555; }
+    #audio-controls button:hover { background: #222; }
+    #audio-controls button.off { opacity: 0.35; }
 
     /* ── Screens ── */
     .screen {
@@ -315,7 +319,10 @@
 <canvas id="bg-canvas"></canvas>
 <div id="countdown-dim"></div>
 <div id="countdown-overlay"><div class="countdown-num" id="countdown-display"></div></div>
-<button id="mute-btn" aria-label="音效切換">🔊</button>
+<div id="audio-controls">
+  <button id="bgm-btn" title="背景音樂">🎵</button>
+  <button id="sfx-btn" title="音效">🔊</button>
+</div>
 
 <!-- ═══════════════ IDLE SCREEN ═══════════════ -->
 <div class="screen" id="idle-screen">
@@ -494,56 +501,93 @@
   // ════════════════════════════════════════════════
   let audioCtx = null;
   let bgGain = null;
-  let muted = false;
-  const AUDIO_INITIALIZED = { done: false };
+  let bgMuted = false;
+  let sfxMuted = false;
+  let bgTimer = null;
+  let bgStep = 0;
+  let audioReady = false;
 
   function initAudio() {
-    if (AUDIO_INITIALIZED.done) return;
-    AUDIO_INITIALIZED.done = true;
+    if (audioReady) return;
+    audioReady = true;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     startBgMusic();
   }
 
+  // ── 8-bit style BGM ────────────────────────────
+  // A minor pentatonic loop, 130 BPM, 8th notes (~230ms each)
+  const BGM_MS = 230;
+  // [freq Hz, volume 0-1]  0 = rest
+  const BGM_SEQ = [
+    [220,    0.7], [0,      0  ], [164.81, 0.5], [196,    0.55],
+    [220,    0.7], [196,    0.5], [164.81, 0.5], [0,      0   ],
+    [146.83, 0.6], [0,      0  ], [164.81, 0.55],[196,    0.5 ],
+    [220,    0.7], [0,      0  ], [196,    0.5 ], [164.81, 0.6],
+  ];
+
   function startBgMusic() {
     bgGain = audioCtx.createGain();
-    bgGain.gain.value = muted ? 0 : 0.035;
+    bgGain.gain.value = bgMuted ? 0 : 0.04;
     bgGain.connect(audioCtx.destination);
-
-    // Ambient pad: A1 + E2 + A2, slightly detuned for warmth
-    [
-      { freq: 55,    detune: 0   },
-      { freq: 82.41, detune: 3   },
-      { freq: 110,   detune: -2  },
-    ].forEach(({ freq, detune }) => {
-      const osc = audioCtx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      osc.detune.value = detune;
-      osc.connect(bgGain);
-      osc.start();
-    });
+    bgStep = 0;
+    scheduleBgNote();
   }
 
-  // Short metallic "coin deposit" click
+  function scheduleBgNote() {
+    if (!audioCtx) return;
+    const [freq, vol] = BGM_SEQ[bgStep % BGM_SEQ.length];
+    bgStep++;
+
+    if (freq > 0 && !bgMuted) {
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const env = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(vol, now);
+      env.gain.exponentialRampToValueAtTime(0.001, now + (BGM_MS / 1000) * 0.75);
+      osc.connect(env);
+      env.connect(bgGain);
+      osc.start(now);
+      osc.stop(now + (BGM_MS / 1000) * 0.8);
+    }
+    bgTimer = setTimeout(scheduleBgNote, BGM_MS);
+  }
+
+  // ── Click sound: low punchy thud ───────────────
   function playClickSound() {
-    if (!audioCtx || muted) return;
+    if (!audioCtx || sfxMuted) return;
     const now = audioCtx.currentTime;
+
+    // Main thud: starts mid, drops to low freq fast
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1400, now);
-    osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
-    gain.gain.setValueAtTime(0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(280, now);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.07);
+    gain.gain.setValueAtTime(0.65, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start(now);
-    osc.stop(now + 0.1);
+    osc.stop(now + 0.13);
+
+    // Crisp attack transient (short square burst)
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'square';
+    osc2.frequency.value = 600;
+    gain2.gain.setValueAtTime(0.18, now);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(now);
+    osc2.stop(now + 0.03);
   }
 
-  // Countdown beeps: n=3/2/1 = tick, n=0 = GO fanfare
+  // ── Countdown beeps ────────────────────────────
   function playCountdownBeep(n) {
-    if (!audioCtx) return;
+    if (!audioCtx || sfxMuted) return;
     const now = audioCtx.currentTime;
     if (n >= 1) {
       const freq = n === 1 ? 880 : 660;
@@ -557,7 +601,6 @@
       osc.connect(gain); gain.connect(audioCtx.destination);
       osc.start(now); osc.stop(now + 0.32);
     } else {
-      // GO! ascending 3-note fanfare
       [[880, 0], [1100, 0.07], [1320, 0.14]].forEach(([freq, delay]) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -571,18 +614,19 @@
     }
   }
 
-  // Mute toggle
-  function toggleMute() {
-    muted = !muted;
-    if (bgGain && audioCtx) {
-      bgGain.gain.setTargetAtTime(muted ? 0 : 0.035, audioCtx.currentTime, 0.15);
-    }
-    document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
-  }
-
-  document.getElementById('mute-btn').addEventListener('click', (e) => {
+  // ── Audio toggle buttons ───────────────────────
+  document.getElementById('bgm-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    toggleMute();
+    bgMuted = !bgMuted;
+    if (bgGain && audioCtx)
+      bgGain.gain.setTargetAtTime(bgMuted ? 0 : 0.04, audioCtx.currentTime, 0.2);
+    document.getElementById('bgm-btn').classList.toggle('off', bgMuted);
+  });
+
+  document.getElementById('sfx-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    sfxMuted = !sfxMuted;
+    document.getElementById('sfx-btn').classList.toggle('off', sfxMuted);
   });
 
   // ════════════════════════════════════════════════
@@ -877,8 +921,11 @@
     else if (state === 'playing') onPress();
   });
 
-  // Touch — 1 press per touchstart event regardless of finger count
-  // (Prevents multi-finger score inflation while fixing the 2-finger dead zone)
+  // Touch — 40ms throttle prevents simultaneous multi-finger spam
+  // while allowing fast 2-finger alternating tapping naturally
+  let lastTouchPressTime = 0;
+  const TOUCH_THROTTLE_MS = 40;
+
   document.addEventListener('touchstart', (e) => {
     if (e.target.closest('button, input')) return;
     if (state === 'idle') {
@@ -886,7 +933,11 @@
       startGame();
     } else if (state === 'playing') {
       e.preventDefault();
-      onPress(); // always exactly 1 press per event
+      const now = Date.now();
+      if (now - lastTouchPressTime >= TOUCH_THROTTLE_MS) {
+        lastTouchPressTime = now;
+        onPress();
+      }
     }
   }, { passive: false });
 
