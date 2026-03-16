@@ -924,7 +924,7 @@
   // Touch — 40ms throttle prevents simultaneous multi-finger spam
   // while allowing fast 2-finger alternating tapping naturally
   let lastTouchPressTime = 0;
-  const TOUCH_THROTTLE_MS = 40;
+  const TOUCH_THROTTLE_MS = 0; // 暫時關閉限制，測試中
 
   document.addEventListener('touchstart', (e) => {
     if (e.target.closest('button, input')) return;
