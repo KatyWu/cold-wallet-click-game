@@ -22,82 +22,80 @@
     }
 
     html, body {
-      height: 100%;
-      width: 100%;
+      height: 100%; width: 100%;
       overflow: hidden;
-      touch-action: manipulation; /* prevent double-tap zoom */
+      touch-action: manipulation;
     }
-
     body {
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      -webkit-user-select: none;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      user-select: none; -webkit-user-select: none;
     }
+    body.game-active { touch-action: none; }
 
-    /* During game: block all browser touch gestures */
-    body.game-active {
-      touch-action: none;
-    }
-
-    /* ── Background canvas ── */
+    /* ── BG Canvas ── */
     #bg-canvas {
-      position: fixed;
-      inset: 0;
-      opacity: 0.06;
-      pointer-events: none;
-      z-index: 0;
+      position: fixed; inset: 0;
+      opacity: 0.06; pointer-events: none; z-index: 0;
     }
+
+    /* ── Countdown dim overlay ── */
+    #countdown-dim {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.72);
+      z-index: 45;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #countdown-dim.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── Mute button ── */
+    #mute-btn {
+      position: fixed;
+      top: 16px; right: 16px;
+      z-index: 200;
+      width: 40px; height: 40px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+      line-height: 1;
+    }
+    #mute-btn:hover { background: #222; border-color: #555; }
 
     /* ── Screens ── */
     .screen {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 28px;
-      z-index: 10;
-      padding: 20px;
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 28px; z-index: 10; padding: 20px;
       transition: opacity 0.35s ease, transform 0.35s ease;
       overflow-y: auto;
     }
     .screen.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(0.97);
+      opacity: 0; pointer-events: none; transform: scale(0.97);
     }
 
     /* ── Wallet Device ── */
-    .wallet-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
+    .wallet-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .wallet-device {
-      width: 180px;
-      height: 272px;
+      width: 180px; height: 272px;
       background: linear-gradient(160deg, #1e1e1e 0%, #141414 60%, #0e0e0e 100%);
-      border: 1.5px solid #333;
-      border-radius: 22px;
-      box-shadow:
-        0 0 0 1px #222,
-        0 20px 50px rgba(0,0,0,0.8),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 18px 14px 14px;
-      gap: 10px;
-      position: relative;
-      transition: box-shadow 0.08s ease;
+      border: 1.5px solid #333; border-radius: 22px;
+      box-shadow: 0 0 0 1px #222, 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 14px 14px; gap: 10px;
+      position: relative; transition: box-shadow 0.08s ease;
     }
     .wallet-device.pressed {
       box-shadow:
@@ -106,39 +104,17 @@
         0 20px 50px rgba(0,0,0,0.8),
         inset 0 1px 0 rgba(255,255,255,0.06);
     }
-    .wallet-logo {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
+    .wallet-logo { font-size: 10px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
     .wallet-screen {
-      width: 100%;
-      background: #060a08;
-      border: 1px solid #222;
-      border-radius: 9px;
-      padding: 10px 8px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      box-shadow: inset 0 0 18px rgba(0,0,0,0.5);
+      width: 100%; background: #060a08; border: 1px solid #222; border-radius: 9px;
+      padding: 10px 8px; flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 5px; box-shadow: inset 0 0 18px rgba(0,0,0,0.5);
     }
-    .screen-label {
-      font-size: 9px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #3a5a3a;
-    }
+    .screen-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #3a5a3a; }
     .screen-btc {
-      font-size: 20px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      color: var(--btc);
-      letter-spacing: -0.02em;
+      font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;
+      color: var(--btc); letter-spacing: -0.02em;
       font-family: 'SF Mono', 'Fira Code', monospace;
       transition: transform 0.08s ease;
     }
@@ -148,209 +124,88 @@
     .screen-addr { font-size: 7px; color: #2a4a2a; font-family: monospace; text-align: center; }
 
     .wallet-slot {
-      width: 75%;
-      height: 5px;
-      background: #080808;
-      border-radius: 3px;
-      border: 1px solid #222;
-      position: relative;
-      overflow: hidden;
+      width: 75%; height: 5px; background: #080808;
+      border-radius: 3px; border: 1px solid #222;
+      position: relative; overflow: hidden;
     }
     .wallet-slot::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: var(--btc);
-      opacity: 0;
-      border-radius: 3px;
-      box-shadow: 0 0 10px var(--btc);
+      content: ''; position: absolute; inset: 0;
+      background: var(--btc); opacity: 0;
+      border-radius: 3px; box-shadow: 0 0 10px var(--btc);
       transition: opacity 0.04s ease;
     }
     .wallet-slot.flash::after { opacity: 1; }
-
     .wallet-btns { display: flex; gap: 7px; }
-    .wallet-btn {
-      width: 26px; height: 11px;
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 4px;
-    }
-    .wallet-tag {
-      font-size: 9px;
-      letter-spacing: 0.22em;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
+    .wallet-btn { width: 26px; height: 11px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px; }
+    .wallet-tag { font-size: 9px; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; }
 
     /* ── Idle screen ── */
-    .idle-eyebrow {
-      font-size: 12px;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .idle-headline {
-      font-size: clamp(28px, 7vw, 40px);
-      font-weight: 900;
-      letter-spacing: -0.03em;
-      color: var(--text);
-      text-align: center;
-      line-height: 1.1;
-    }
+    .idle-eyebrow { font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+    .idle-headline { font-size: clamp(28px, 7vw, 40px); font-weight: 900; letter-spacing: -0.03em; color: var(--text); text-align: center; line-height: 1.1; }
     .idle-headline span { color: var(--btc); }
 
-    .start-btn {
-      margin-top: 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
+    .start-btn { margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .start-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--surface2);
-      border: 1px solid #333;
-      border-radius: 50px;
-      padding: 14px 28px;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--surface2); border: 1px solid #333; border-radius: 50px;
+      padding: 14px 28px; font-size: 15px; font-weight: 600; color: var(--text);
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
     }
-    .start-badge:hover, .start-badge:active {
-      background: #222;
-      border-color: var(--btc);
-    }
+    .start-badge:hover, .start-badge:active { background: #222; border-color: var(--btc); }
     .start-badge kbd {
-      background: var(--surface);
-      border: 1px solid #444;
-      border-bottom: 2px solid #333;
-      border-radius: 5px;
-      padding: 2px 10px;
-      font-size: 12px;
-      font-family: inherit;
-      color: var(--btc);
+      background: var(--surface); border: 1px solid #444; border-bottom: 2px solid #333;
+      border-radius: 5px; padding: 2px 10px; font-size: 12px; font-family: inherit; color: var(--btc);
     }
     .start-sub { font-size: 12px; color: var(--muted); }
 
     .lb-btn-idle {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 20px;
-      font-size: 12px;
-      color: var(--muted);
-      cursor: pointer;
-      letter-spacing: 0.05em;
-      transition: border-color 0.15s, color 0.15s;
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 20px; font-size: 12px; color: var(--muted);
+      cursor: pointer; letter-spacing: 0.05em; transition: border-color 0.15s, color 0.15s;
     }
     .lb-btn-idle:hover { border-color: var(--btc); color: var(--btc); }
 
     /* ── Game screen ── */
-    .game-layout {
-      display: flex;
-      align-items: center;
-      gap: 40px;
-    }
+    .game-layout { display: flex; align-items: center; gap: 40px; }
     @media (max-width: 560px) {
-      .game-layout {
-        flex-direction: column;
-        gap: 20px;
-      }
-      .wallet-device {
-        width: 160px;
-        height: 242px;
-      }
+      .game-layout { flex-direction: column; gap: 20px; }
+      .wallet-device { width: 160px; height: 242px; }
     }
-
-    .game-right {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
+    .game-right { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 
     /* Timer ring */
     .timer-wrap { position: relative; width: 120px; height: 120px; }
     .timer-svg { width: 120px; height: 120px; transform: rotate(-90deg); }
     .timer-track { fill: none; stroke: var(--surface2); stroke-width: 7; }
     .timer-arc {
-      fill: none;
-      stroke: var(--btc);
-      stroke-width: 7;
-      stroke-linecap: round;
-      stroke-dasharray: 326.73;
-      stroke-dashoffset: 0;
+      fill: none; stroke: var(--btc); stroke-width: 7; stroke-linecap: round;
+      stroke-dasharray: 326.73; stroke-dashoffset: 0;
       transition: stroke-dashoffset 1s linear, stroke 0.4s;
     }
     .timer-arc.urgent { stroke: var(--red); }
-    .timer-center {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .timer-num {
-      font-size: 38px;
-      font-weight: 900;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-    }
+    .timer-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .timer-num { font-size: 38px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
     .timer-lbl { font-size: 9px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
 
     .press-stats {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 22px;
-      width: 100%;
-      min-width: 130px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 22px; width: 100%; min-width: 130px;
     }
     .stat-lbl { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-    .stat-val {
-      font-size: 30px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      font-family: 'SF Mono', monospace;
-    }
+    .stat-val { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; font-family: 'SF Mono', monospace; }
 
-    .game-hint {
-      font-size: 12px;
-      color: var(--muted);
-      text-align: center;
-      animation: pulse-hint 1.4s ease-in-out infinite;
-    }
+    .game-hint { font-size: 12px; color: var(--muted); text-align: center; animation: pulse-hint 1.4s ease-in-out infinite; }
     @keyframes pulse-hint { 0%,100%{opacity:0.45} 50%{opacity:1} }
 
     /* ── Countdown overlay ── */
     #countdown-overlay {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 80;
-      pointer-events: none;
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      z-index: 80; pointer-events: none;
     }
-    .countdown-num {
-      font-size: 150px;
-      font-weight: 900;
-      color: var(--btc);
-      opacity: 0;
-      text-shadow: 0 0 60px rgba(247,147,26,0.4);
-    }
-    .countdown-num.show {
-      animation: cdpop 0.85s cubic-bezier(0.22,1,0.36,1) forwards;
-    }
+    .countdown-num { font-size: 150px; font-weight: 900; color: var(--btc); opacity: 0; text-shadow: 0 0 60px rgba(247,147,26,0.4); }
+    .countdown-num.show { animation: cdpop 0.85s cubic-bezier(0.22,1,0.36,1) forwards; }
     @keyframes cdpop {
       0%   { opacity:0; transform:scale(2); }
       20%  { opacity:1; transform:scale(1); }
@@ -360,13 +215,9 @@
 
     /* ── Particles ── */
     .particle {
-      position: fixed;
-      width: 7px;
-      height: 7px;
-      background: var(--btc);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 90;
+      position: fixed; width: 7px; height: 7px;
+      background: var(--btc); border-radius: 50%;
+      pointer-events: none; z-index: 90;
       animation: particle-fly 0.55s ease-out forwards;
     }
     @keyframes particle-fly {
@@ -376,28 +227,15 @@
 
     /* ── Result screen ── */
     .result-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px 36px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-      box-shadow: 0 0 60px rgba(247,147,26,0.06);
-      width: min(420px, 92vw);
-      max-height: 90vh;
-      overflow-y: auto;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 32px 36px; display: flex; flex-direction: column; align-items: center;
+      gap: 20px; box-shadow: 0 0 60px rgba(247,147,26,0.06);
+      width: min(420px, 92vw); max-height: 90vh; overflow-y: auto;
     }
     .result-eyebrow { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
     .result-btc-num {
-      font-size: clamp(40px, 10vw, 56px);
-      font-weight: 900;
-      font-variant-numeric: tabular-nums;
-      color: var(--btc);
-      letter-spacing: -0.03em;
-      font-family: 'SF Mono', monospace;
-      line-height: 1;
+      font-size: clamp(40px, 10vw, 56px); font-weight: 900; font-variant-numeric: tabular-nums;
+      color: var(--btc); letter-spacing: -0.03em; font-family: 'SF Mono', monospace; line-height: 1;
     }
     .result-btc-unit { font-size: 14px; color: var(--muted); letter-spacing: 0.1em; }
     .result-divider { width: 100%; height: 1px; background: var(--border); }
@@ -408,85 +246,37 @@
     .result-msg { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.5; }
     .result-msg strong { color: var(--text); }
 
-    /* Name entry for top 10 */
     .name-entry {
-      width: 100%;
-      background: rgba(247,147,26,0.06);
-      border: 1px solid rgba(247,147,26,0.2);
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
+      width: 100%; background: rgba(247,147,26,0.06);
+      border: 1px solid rgba(247,147,26,0.2); border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
     .name-entry-title { font-size: 13px; font-weight: 700; color: var(--btc); }
     .name-entry-sub { font-size: 11px; color: var(--muted); }
     .name-input {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 15px;
-      color: var(--text);
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.15s;
-      text-align: center;
+      width: 100%; background: var(--surface2); border: 1px solid #444; border-radius: 8px;
+      padding: 10px 14px; font-size: 15px; color: var(--text); font-family: inherit;
+      outline: none; transition: border-color 0.15s; text-align: center;
     }
     .name-input:focus { border-color: var(--btc); }
     .name-input::placeholder { color: var(--muted); }
-
     .btn-submit-name {
-      width: 100%;
-      background: var(--btc);
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      padding: 11px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.15s;
+      width: 100%; background: var(--btc); color: #000; border: none; border-radius: 8px;
+      padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s;
     }
     .btn-submit-name:hover { background: #ffaa33; }
     .btn-submit-name:disabled { background: #555; color: #888; cursor: default; }
 
-    /* Leaderboard table */
-    .lb-section {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .lb-title {
-      font-size: 11px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-align: center;
-      margin-bottom: 2px;
-    }
+    /* Leaderboard */
+    .lb-section { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+    .lb-title { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 2px; }
     .lb-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      background: var(--surface2);
-      border-radius: 8px;
-      font-size: 13px;
-      border: 1px solid transparent;
-      transition: border-color 0.2s;
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: var(--surface2); border-radius: 8px;
+      font-size: 13px; border: 1px solid transparent; transition: border-color 0.2s;
     }
     .lb-row.highlight { border-color: rgba(247,147,26,0.3); background: rgba(247,147,26,0.05); }
-    .lb-rank {
-      width: 22px;
-      font-size: 14px;
-      font-weight: 700;
-      text-align: center;
-      flex-shrink: 0;
-    }
+    .lb-rank { width: 22px; font-size: 14px; font-weight: 700; text-align: center; flex-shrink: 0; }
     .lb-rank.r1 { color: var(--gold); }
     .lb-rank.r2 { color: var(--silver); }
     .lb-rank.r3 { color: var(--bronze); }
@@ -497,62 +287,35 @@
     .lb-loading { text-align: center; color: var(--muted); font-size: 12px; padding: 8px 0; animation: pulse-hint 1s infinite; }
 
     .btn-restart {
-      width: 100%;
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 13px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
+      width: 100%; background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
     }
     .btn-restart:hover { background: #222; border-color: #555; }
     .btn-restart:active { transform: scale(0.98); }
 
-    /* ── Leaderboard full screen ── */
+    /* Leaderboard full screen */
     .lb-full-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
-      width: min(420px, 92vw);
-      max-height: 85vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 32px; width: min(420px, 92vw); max-height: 85vh; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 16px;
     }
-    .lb-full-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+    .lb-full-header { display: flex; align-items: center; justify-content: space-between; }
     .lb-full-title { font-size: 18px; font-weight: 800; }
     .lb-close {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 10px;
-      color: var(--muted);
-      font-size: 12px;
-      cursor: pointer;
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 10px; color: var(--muted); font-size: 12px; cursor: pointer;
     }
     .lb-close:hover { color: var(--text); }
-
-    /* ── Utility ── */
-    @keyframes fade-up {
-      from { opacity:0; transform:translateY(12px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    .fade-up { animation: fade-up 0.5s ease both; }
   </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
+<div id="countdown-dim"></div>
 <div id="countdown-overlay"><div class="countdown-num" id="countdown-display"></div></div>
+<button id="mute-btn" aria-label="音效切換">🔊</button>
 
 <!-- ═══════════════ IDLE SCREEN ═══════════════ -->
 <div class="screen" id="idle-screen">
@@ -661,7 +424,6 @@
 
     <div class="result-msg" id="result-msg">—</div>
 
-    <!-- Name entry (only shown if top 10) -->
     <div class="name-entry" id="name-entry" style="display:none;">
       <div class="name-entry-title">🏆 你進入全球前10名！</div>
       <div class="name-entry-sub">輸入你的名字登上排行榜</div>
@@ -671,7 +433,6 @@
 
     <div class="result-divider"></div>
 
-    <!-- Leaderboard (always shown in result) -->
     <div class="lb-section">
       <div class="lb-title">全球排行榜 TOP 10</div>
       <div id="result-lb-content"><div class="lb-loading">載入中…</div></div>
@@ -694,13 +455,12 @@
 
 <script>
   // ════════════════════════════════════════════════
-  // ── Supabase 設定 (填入你的 Project URL 和 anon key)
+  // ── Supabase
   // ════════════════════════════════════════════════
   const SUPABASE_URL = 'https://lajgcimdalqjrcwddinv.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_Fk0VSpg5c9P_V1hWqs8myw_3vAbe_YX';
   const HAS_BACKEND = true;
 
-  // ── Supabase helpers ──────────────────────────
   async function fetchLeaderboard() {
     if (!HAS_BACKEND) return null;
     try {
@@ -729,15 +489,112 @@
     } catch {}
   }
 
-  // ── Matrix rain background ────────────────────
+  // ════════════════════════════════════════════════
+  // ── Audio System (Web Audio API)
+  // ════════════════════════════════════════════════
+  let audioCtx = null;
+  let bgGain = null;
+  let muted = false;
+  const AUDIO_INITIALIZED = { done: false };
+
+  function initAudio() {
+    if (AUDIO_INITIALIZED.done) return;
+    AUDIO_INITIALIZED.done = true;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    startBgMusic();
+  }
+
+  function startBgMusic() {
+    bgGain = audioCtx.createGain();
+    bgGain.gain.value = muted ? 0 : 0.035;
+    bgGain.connect(audioCtx.destination);
+
+    // Ambient pad: A1 + E2 + A2, slightly detuned for warmth
+    [
+      { freq: 55,    detune: 0   },
+      { freq: 82.41, detune: 3   },
+      { freq: 110,   detune: -2  },
+    ].forEach(({ freq, detune }) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc.detune.value = detune;
+      osc.connect(bgGain);
+      osc.start();
+    });
+  }
+
+  // Short metallic "coin deposit" click
+  function playClickSound() {
+    if (!audioCtx || muted) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1400, now);
+    osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
+
+  // Countdown beeps: n=3/2/1 = tick, n=0 = GO fanfare
+  function playCountdownBeep(n) {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    if (n >= 1) {
+      const freq = n === 1 ? 880 : 660;
+      const vol  = n === 1 ? 0.45 : 0.32;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.32);
+    } else {
+      // GO! ascending 3-note fanfare
+      [[880, 0], [1100, 0.07], [1320, 0.14]].forEach(([freq, delay]) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.38, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.22);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + delay); osc.stop(now + delay + 0.26);
+      });
+    }
+  }
+
+  // Mute toggle
+  function toggleMute() {
+    muted = !muted;
+    if (bgGain && audioCtx) {
+      bgGain.gain.setTargetAtTime(muted ? 0 : 0.035, audioCtx.currentTime, 0.15);
+    }
+    document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+  }
+
+  document.getElementById('mute-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMute();
+  });
+
+  // ════════════════════════════════════════════════
+  // ── Matrix rain background
+  // ════════════════════════════════════════════════
   (function() {
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     const chars = '₿01アイウエオ0123456789ABCDEF';
     let cols, drops;
     function resize() {
-      canvas.width = innerWidth;
-      canvas.height = innerHeight;
+      canvas.width = innerWidth; canvas.height = innerHeight;
       cols = Math.floor(canvas.width / 20);
       drops = Array(cols).fill(1);
     }
@@ -756,25 +613,27 @@
     }, 50);
   })();
 
-  // ── Touch device detection ────────────────────
+  // ════════════════════════════════════════════════
+  // ── Device detection
+  // ════════════════════════════════════════════════
   const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
   if (isTouchDevice) {
     document.getElementById('start-hint-text').innerHTML = '點擊螢幕開始';
     document.getElementById('game-hint-text').textContent = '快速觸碰螢幕！';
   }
 
-  // ── Game constants ────────────────────────────
+  // ════════════════════════════════════════════════
+  // ── Game state
+  // ════════════════════════════════════════════════
   const TOTAL_TIME = 10;
-  const CIRCUMFERENCE = 2 * Math.PI * 52; // 326.73
+  const CIRCUMFERENCE = 2 * Math.PI * 52;
 
-  // ── Game state ────────────────────────────────
-  let state = 'idle'; // idle | countdown | playing | result | lb
+  let state = 'idle';
   let presses = 0;
   let timeLeft = TOTAL_TIME;
   let gameInterval = null;
   let scoreSubmitted = false;
 
-  // ── Screen management ─────────────────────────
   const screens = {
     idle:   document.getElementById('idle-screen'),
     game:   document.getElementById('game-screen'),
@@ -783,16 +642,14 @@
   };
 
   function showScreen(name) {
-    Object.keys(screens).forEach(k => {
-      screens[k].classList.toggle('hidden', k !== name);
-    });
-    // Enable/disable body touch-action
-    if (name === 'game') {
-      document.body.classList.add('game-active');
-    } else {
-      document.body.classList.remove('game-active');
-    }
+    Object.keys(screens).forEach(k => screens[k].classList.toggle('hidden', k !== name));
+    document.body.classList.toggle('game-active', name === 'game');
   }
+
+  // ── Dim overlay helpers ───────────────────────
+  const dimEl = document.getElementById('countdown-dim');
+  function showDim() { dimEl.classList.add('active'); }
+  function hideDim() { dimEl.classList.remove('active'); }
 
   // ── Display updates ───────────────────────────
   function updateGameDisplay() {
@@ -813,25 +670,22 @@
     slot.classList.add('flash');
     setTimeout(() => slot.classList.remove('flash'), 110);
   }
-
   function bumpBtc() {
     const el = document.getElementById('game-btc-display');
     el.classList.add('bump');
     setTimeout(() => el.classList.remove('bump'), 110);
   }
-
   function walletPressed() {
     const w = document.getElementById('wallet-game');
     w.classList.add('pressed');
     setTimeout(() => w.classList.remove('pressed'), 140);
   }
-
   function spawnParticles(x, y) {
     for (let i = 0; i < 7; i++) {
       const p = document.createElement('div');
       p.className = 'particle';
       const angle = Math.random() * Math.PI * 2;
-      const dist = 25 + Math.random() * 45;
+      const dist  = 25 + Math.random() * 45;
       p.style.cssText = `left:${x}px;top:${y}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px`;
       document.body.appendChild(p);
       setTimeout(() => p.remove(), 600);
@@ -840,16 +694,27 @@
 
   // ── Countdown 3-2-1 ──────────────────────────
   function runCountdown(callback) {
+    showDim(); // darken background
     const el = document.getElementById('countdown-display');
     let n = 3;
+
     function tick() {
+      playCountdownBeep(n);
       el.textContent = n;
       el.className = '';
-      void el.offsetWidth; // reflow to restart animation
+      void el.offsetWidth;
       el.className = 'countdown-num show';
       n--;
-      if (n >= 0) setTimeout(tick, 850);
-      else setTimeout(() => { el.className = 'countdown-num'; callback(); }, 850);
+      if (n >= 0) {
+        setTimeout(tick, 850);
+      } else {
+        setTimeout(() => {
+          playCountdownBeep(0);   // GO! fanfare
+          hideDim();              // brighten back up
+          el.className = 'countdown-num';
+          callback();
+        }, 850);
+      }
     }
     tick();
   }
@@ -857,6 +722,7 @@
   // ── Start game ────────────────────────────────
   function startGame() {
     if (state !== 'idle') return;
+    initAudio(); // ensure AudioContext is created after user gesture
     state = 'countdown';
     showScreen('game');
     presses = 0;
@@ -887,7 +753,7 @@
     flashSlot();
     bumpBtc();
     walletPressed();
-    // Spawn particles at wallet center
+    playClickSound();
     const w = document.getElementById('wallet-game');
     const r = w.getBoundingClientRect();
     spawnParticles(r.left + r.width / 2, r.top + r.height * 0.65);
@@ -898,12 +764,10 @@
     state = 'result';
     document.body.classList.remove('game-active');
 
-    const btc = (presses * 0.1).toFixed(4);
-    document.getElementById('result-btc-num').textContent = btc;
+    document.getElementById('result-btc-num').textContent = (presses * 0.1).toFixed(4);
     document.getElementById('result-presses').textContent = presses;
     document.getElementById('result-rate').textContent = (presses / TOTAL_TIME).toFixed(1);
 
-    // Result message
     const msgs = [
       [0,  0,  '你忘記按了嗎？<strong>試試看！</strong>'],
       [1,  9,  '還不錯的開始，繼續加油！'],
@@ -916,18 +780,20 @@
     document.getElementById('result-msg').innerHTML = m ? m[2] : '';
 
     showScreen('result');
-
-    // Load leaderboard and check if top 10
     document.getElementById('result-lb-content').innerHTML = '<div class="lb-loading">載入中…</div>';
     document.getElementById('name-entry').style.display = 'none';
 
     const lb = await fetchLeaderboard();
     renderLbContent(document.getElementById('result-lb-content'), lb, -1);
 
-    // Check if qualifies for top 10
     if (HAS_BACKEND && presses > 0) {
       const qualifies = !lb || lb.length < 10 || presses > lb[lb.length - 1].presses;
       if (qualifies) {
+        // Reset button state every time (prevents stale disabled state from previous game)
+        const btn = document.getElementById('btn-submit-name');
+        btn.disabled = false;
+        btn.textContent = '登上排行榜';
+        document.getElementById('name-input').value = '';
         document.getElementById('name-entry').style.display = 'flex';
         document.getElementById('name-input').focus();
       }
@@ -937,7 +803,7 @@
   // ── Render leaderboard rows ───────────────────
   function renderLbContent(container, rows, highlightPresses) {
     if (!HAS_BACKEND) {
-      container.innerHTML = '<div class="lb-empty">排行榜需要後端設定<br><small style="font-size:10px;opacity:0.5;">（請設定 Supabase 憑證）</small></div>';
+      container.innerHTML = '<div class="lb-empty">排行榜需要後端設定</div>';
       return;
     }
     if (!rows || rows.length === 0) {
@@ -962,7 +828,7 @@
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // ── Submit name to leaderboard ────────────────
+  // ── Submit name ───────────────────────────────
   document.getElementById('btn-submit-name').addEventListener('click', async () => {
     const name = document.getElementById('name-input').value.trim();
     if (!name) { document.getElementById('name-input').focus(); return; }
@@ -972,7 +838,6 @@
     await submitScore(name, presses);
     scoreSubmitted = true;
     document.getElementById('name-entry').style.display = 'none';
-    // Refresh leaderboard
     const lb = await fetchLeaderboard();
     renderLbContent(document.getElementById('result-lb-content'), lb, presses);
   });
@@ -1000,9 +865,9 @@
     showScreen('idle');
   });
 
-  // ══════════════════════════════════════════════
-  // ── Input handling (keyboard + touch) ─────────
-  // ══════════════════════════════════════════════
+  // ════════════════════════════════════════════════
+  // ── Input handling
+  // ════════════════════════════════════════════════
 
   // Keyboard
   document.addEventListener('keydown', (e) => {
@@ -1012,25 +877,20 @@
     else if (state === 'playing') onPress();
   });
 
-  // Touch — count EACH finger individually, no waiting for click
+  // Touch — 1 press per touchstart event regardless of finger count
+  // (Prevents multi-finger score inflation while fixing the 2-finger dead zone)
   document.addEventListener('touchstart', (e) => {
-    // Don't intercept button taps
-    const tag = e.target.tagName;
-    if (tag === 'BUTTON' || tag === 'INPUT' || e.target.closest('button, input')) return;
-
+    if (e.target.closest('button, input')) return;
     if (state === 'idle') {
       e.preventDefault();
       startGame();
     } else if (state === 'playing') {
       e.preventDefault();
-      // Each changed touch = one press
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        onPress();
-      }
+      onPress(); // always exactly 1 press per event
     }
   }, { passive: false });
 
-  // Click fallback (desktop non-space, trackpad tap)
+  // Click fallback (desktop trackpad tap)
   document.addEventListener('click', (e) => {
     if (e.target.closest('button, input')) return;
     if (state === 'idle') startGame();
