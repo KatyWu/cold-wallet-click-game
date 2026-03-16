@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>₿ 冷錢包儲存挑戰</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --btc: #f7931a;
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #e8e0d0;
+      --muted: #777;
+      --red: #ef4444;
+      --gold: #fbbf24;
+      --silver: #94a3b8;
+      --bronze: #cd7f32;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      touch-action: manipulation; /* prevent double-tap zoom */
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* During game: block all browser touch gestures */
+    body.game-active {
+      touch-action: none;
+    }
+
+    /* ── Background canvas ── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Screens ── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      z-index: 10;
+      padding: 20px;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      overflow-y: auto;
+    }
+    .screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97);
+    }
+
+    /* ── Wallet Device ── */
+    .wallet-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .wallet-device {
+      width: 180px;
+      height: 272px;
+      background: linear-gradient(160deg, #1e1e1e 0%, #141414 60%, #0e0e0e 100%);
+      border: 1.5px solid #333;
+      border-radius: 22px;
+      box-shadow:
+        0 0 0 1px #222,
+        0 20px 50px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 14px 14px;
+      gap: 10px;
+      position: relative;
+      transition: box-shadow 0.08s ease;
+    }
+    .wallet-device.pressed {
+      box-shadow:
+        0 0 0 1px rgba(247,147,26,0.4),
+        0 0 40px rgba(247,147,26,0.25),
+        0 20px 50px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .wallet-logo {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .wallet-screen {
+      width: 100%;
+      background: #060a08;
+      border: 1px solid #222;
+      border-radius: 9px;
+      padding: 10px 8px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      box-shadow: inset 0 0 18px rgba(0,0,0,0.5);
+    }
+    .screen-label {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #3a5a3a;
+    }
+    .screen-btc {
+      font-size: 20px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--btc);
+      letter-spacing: -0.02em;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      transition: transform 0.08s ease;
+    }
+    .screen-btc.bump { transform: scale(1.18); }
+    .screen-unit { font-size: 9px; color: #4a7a4a; letter-spacing: 0.08em; }
+    .screen-line { width: 100%; height: 1px; background: #1a2a1a; margin: 3px 0; }
+    .screen-addr { font-size: 7px; color: #2a4a2a; font-family: monospace; text-align: center; }
+
+    .wallet-slot {
+      width: 75%;
+      height: 5px;
+      background: #080808;
+      border-radius: 3px;
+      border: 1px solid #222;
+      position: relative;
+      overflow: hidden;
+    }
+    .wallet-slot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--btc);
+      opacity: 0;
+      border-radius: 3px;
+      box-shadow: 0 0 10px var(--btc);
+      transition: opacity 0.04s ease;
+    }
+    .wallet-slot.flash::after { opacity: 1; }
+
+    .wallet-btns { display: flex; gap: 7px; }
+    .wallet-btn {
+      width: 26px; height: 11px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+    }
+    .wallet-tag {
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ── Idle screen ── */
+    .idle-eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .idle-headline {
+      font-size: clamp(28px, 7vw, 40px);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.1;
+    }
+    .idle-headline span { color: var(--btc); }
+
+    .start-btn {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .start-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface2);
+      border: 1px solid #333;
+      border-radius: 50px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .start-badge:hover, .start-badge:active {
+      background: #222;
+      border-color: var(--btc);
+    }
+    .start-badge kbd {
+      background: var(--surface);
+      border: 1px solid #444;
+      border-bottom: 2px solid #333;
+      border-radius: 5px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--btc);
+    }
+    .start-sub { font-size: 12px; color: var(--muted); }
+
+    .lb-btn-idle {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .lb-btn-idle:hover { border-color: var(--btc); color: var(--btc); }
+
+    /* ── Game screen ── */
+    .game-layout {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+    @media (max-width: 560px) {
+      .game-layout {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .wallet-device {
+        width: 160px;
+        height: 242px;
+      }
+    }
+
+    .game-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Timer ring */
+    .timer-wrap { position: relative; width: 120px; height: 120px; }
+    .timer-svg { width: 120px; height: 120px; transform: rotate(-90deg); }
+    .timer-track { fill: none; stroke: var(--surface2); stroke-width: 7; }
+    .timer-arc {
+      fill: none;
+      stroke: var(--btc);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-dasharray: 326.73;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+    .timer-arc.urgent { stroke: var(--red); }
+    .timer-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .timer-num {
+      font-size: 38px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .timer-lbl { font-size: 9px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+
+    .press-stats {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 22px;
+      width: 100%;
+      min-width: 130px;
+    }
+    .stat-lbl { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    .stat-val {
+      font-size: 30px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .game-hint {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      animation: pulse-hint 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse-hint { 0%,100%{opacity:0.45} 50%{opacity:1} }
+
+    /* ── Countdown overlay ── */
+    #countdown-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 80;
+      pointer-events: none;
+    }
+    .countdown-num {
+      font-size: 150px;
+      font-weight: 900;
+      color: var(--btc);
+      opacity: 0;
+      text-shadow: 0 0 60px rgba(247,147,26,0.4);
+    }
+    .countdown-num.show {
+      animation: cdpop 0.85s cubic-bezier(0.22,1,0.36,1) forwards;
+    }
+    @keyframes cdpop {
+      0%   { opacity:0; transform:scale(2); }
+      20%  { opacity:1; transform:scale(1); }
+      80%  { opacity:1; transform:scale(1); }
+      100% { opacity:0; transform:scale(0.4); }
+    }
+
+    /* ── Particles ── */
+    .particle {
+      position: fixed;
+      width: 7px;
+      height: 7px;
+      background: var(--btc);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 90;
+      animation: particle-fly 0.55s ease-out forwards;
+    }
+    @keyframes particle-fly {
+      0%   { opacity:1; transform:translate(0,0) scale(1); }
+      100% { opacity:0; transform:translate(var(--tx),var(--ty)) scale(0); }
+    }
+
+    /* ── Result screen ── */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 0 60px rgba(247,147,26,0.06);
+      width: min(420px, 92vw);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .result-eyebrow { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+    .result-btc-num {
+      font-size: clamp(40px, 10vw, 56px);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: var(--btc);
+      letter-spacing: -0.03em;
+      font-family: 'SF Mono', monospace;
+      line-height: 1;
+    }
+    .result-btc-unit { font-size: 14px; color: var(--muted); letter-spacing: 0.1em; }
+    .result-divider { width: 100%; height: 1px; background: var(--border); }
+    .result-stats { display: flex; gap: 28px; }
+    .result-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .result-stat-val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .result-stat-lbl { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    .result-msg { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.5; }
+    .result-msg strong { color: var(--text); }
+
+    /* Name entry for top 10 */
+    .name-entry {
+      width: 100%;
+      background: rgba(247,147,26,0.06);
+      border: 1px solid rgba(247,147,26,0.2);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .name-entry-title { font-size: 13px; font-weight: 700; color: var(--btc); }
+    .name-entry-sub { font-size: 11px; color: var(--muted); }
+    .name-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 15px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      text-align: center;
+    }
+    .name-input:focus { border-color: var(--btc); }
+    .name-input::placeholder { color: var(--muted); }
+
+    .btn-submit-name {
+      width: 100%;
+      background: var(--btc);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-submit-name:hover { background: #ffaa33; }
+    .btn-submit-name:disabled { background: #555; color: #888; cursor: default; }
+
+    /* Leaderboard table */
+    .lb-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .lb-title {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 2px;
+    }
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: 8px;
+      font-size: 13px;
+      border: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .lb-row.highlight { border-color: rgba(247,147,26,0.3); background: rgba(247,147,26,0.05); }
+    .lb-rank {
+      width: 22px;
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .lb-rank.r1 { color: var(--gold); }
+    .lb-rank.r2 { color: var(--silver); }
+    .lb-rank.r3 { color: var(--bronze); }
+    .lb-name { flex: 1; font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-btc { font-variant-numeric: tabular-nums; color: var(--btc); font-weight: 700; font-family: monospace; font-size: 13px; }
+    .lb-presses { font-size: 11px; color: var(--muted); width: 36px; text-align: right; flex-shrink: 0; }
+    .lb-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 12px 0; }
+    .lb-loading { text-align: center; color: var(--muted); font-size: 12px; padding: 8px 0; animation: pulse-hint 1s infinite; }
+
+    .btn-restart {
+      width: 100%;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-restart:hover { background: #222; border-color: #555; }
+    .btn-restart:active { transform: scale(0.98); }
+
+    /* ── Leaderboard full screen ── */
+    .lb-full-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      width: min(420px, 92vw);
+      max-height: 85vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .lb-full-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .lb-full-title { font-size: 18px; font-weight: 800; }
+    .lb-close {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .lb-close:hover { color: var(--text); }
+
+    /* ── Utility ── */
+    @keyframes fade-up {
+      from { opacity:0; transform:translateY(12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .fade-up { animation: fade-up 0.5s ease both; }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="countdown-overlay"><div class="countdown-num" id="countdown-display"></div></div>
+
+<!-- ═══════════════ IDLE SCREEN ═══════════════ -->
+<div class="screen" id="idle-screen">
+  <div class="idle-eyebrow">Bitcoin Cold Wallet</div>
+  <div class="idle-headline">比特幣<br><span>儲存挑戰</span></div>
+
+  <div class="wallet-wrap">
+    <div class="wallet-device">
+      <div class="wallet-logo">ColdWallet</div>
+      <div class="wallet-screen">
+        <div class="screen-label">Balance</div>
+        <div class="screen-btc">0.0000</div>
+        <div class="screen-unit">BTC</div>
+        <div class="screen-line"></div>
+        <div class="screen-addr">bc1q…3x9f</div>
+      </div>
+      <div class="wallet-slot"></div>
+      <div class="wallet-btns">
+        <div class="wallet-btn"></div>
+        <div class="wallet-btn"></div>
+      </div>
+    </div>
+    <div class="wallet-tag">Cold Wallet</div>
+  </div>
+
+  <div class="start-btn">
+    <div class="start-badge" id="start-badge">
+      <span id="start-hint-text">按下 <kbd>SPACE</kbd> 開始</span>
+    </div>
+    <div class="start-sub">10 秒內，每按一下 = 存入 0.1 BTC</div>
+  </div>
+
+  <button class="lb-btn-idle" id="lb-btn-idle">查看排行榜 →</button>
+</div>
+
+<!-- ═══════════════ GAME SCREEN ═══════════════ -->
+<div class="screen hidden" id="game-screen">
+  <div class="game-layout">
+    <div class="wallet-wrap">
+      <div class="wallet-device" id="wallet-game">
+        <div class="wallet-logo">ColdWallet</div>
+        <div class="wallet-screen">
+          <div class="screen-label">Depositing…</div>
+          <div class="screen-btc" id="game-btc-display">0.0000</div>
+          <div class="screen-unit">BTC</div>
+          <div class="screen-line"></div>
+          <div class="screen-addr">bc1q…3x9f</div>
+        </div>
+        <div class="wallet-slot" id="slot-game"></div>
+        <div class="wallet-btns">
+          <div class="wallet-btn"></div>
+          <div class="wallet-btn"></div>
+        </div>
+      </div>
+      <div class="wallet-tag">Cold Wallet</div>
+    </div>
+
+    <div class="game-right">
+      <div class="timer-wrap">
+        <svg class="timer-svg" viewBox="0 0 120 120">
+          <circle class="timer-track" cx="60" cy="60" r="52"/>
+          <circle class="timer-arc" id="timer-arc" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="timer-center">
+          <div class="timer-num" id="timer-num">10</div>
+          <div class="timer-lbl">秒</div>
+        </div>
+      </div>
+
+      <div class="press-stats">
+        <div class="stat-lbl">已按次數</div>
+        <div class="stat-val" id="press-count">0</div>
+      </div>
+
+      <div class="game-hint" id="game-hint-text">按 SPACE / 觸碰螢幕！</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ RESULT SCREEN ═══════════════ -->
+<div class="screen hidden" id="result-screen">
+  <div class="result-card">
+    <div class="result-eyebrow">本輪結算</div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div class="result-btc-num" id="result-btc-num">0.0000</div>
+      <div class="result-btc-unit">BTC 已存入冷錢包</div>
+    </div>
+
+    <div class="result-divider"></div>
+
+    <div class="result-stats">
+      <div class="result-stat">
+        <div class="result-stat-val" id="result-presses">0</div>
+        <div class="result-stat-lbl">總按次</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-val" style="color:var(--btc);">10</div>
+        <div class="result-stat-lbl">秒</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-val" id="result-rate">0.0</div>
+        <div class="result-stat-lbl">次/秒</div>
+      </div>
+    </div>
+
+    <div class="result-msg" id="result-msg">—</div>
+
+    <!-- Name entry (only shown if top 10) -->
+    <div class="name-entry" id="name-entry" style="display:none;">
+      <div class="name-entry-title">🏆 你進入全球前10名！</div>
+      <div class="name-entry-sub">輸入你的名字登上排行榜</div>
+      <input class="name-input" id="name-input" type="text" placeholder="你的名字…" maxlength="20" autocomplete="off" />
+      <button class="btn-submit-name" id="btn-submit-name">登上排行榜</button>
+    </div>
+
+    <div class="result-divider"></div>
+
+    <!-- Leaderboard (always shown in result) -->
+    <div class="lb-section">
+      <div class="lb-title">全球排行榜 TOP 10</div>
+      <div id="result-lb-content"><div class="lb-loading">載入中…</div></div>
+    </div>
+
+    <button class="btn-restart" id="btn-restart">再次購買 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════ LEADERBOARD SCREEN ═══════════════ -->
+<div class="screen hidden" id="lb-screen">
+  <div class="lb-full-card">
+    <div class="lb-full-header">
+      <div class="lb-full-title">₿ 全球排行榜</div>
+      <button class="lb-close" id="lb-close">關閉</button>
+    </div>
+    <div id="lb-full-content"><div class="lb-loading">載入中…</div></div>
+  </div>
+</div>
+
+<script>
+  // ════════════════════════════════════════════════
+  // ── Supabase 設定 (填入你的 Project URL 和 anon key)
+  // ════════════════════════════════════════════════
+  const SUPABASE_URL = 'FILL_IN_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'FILL_IN_SUPABASE_ANON_KEY';
+  const HAS_BACKEND = !SUPABASE_URL.startsWith('FILL');
+
+  // ── Supabase helpers ──────────────────────────
+  async function fetchLeaderboard() {
+    if (!HAS_BACKEND) return null;
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/leaderboard?select=name,presses,btc&order=presses.desc&limit=10`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    } catch { return null; }
+  }
+
+  async function submitScore(name, pressCount) {
+    if (!HAS_BACKEND) return;
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ name, presses: pressCount, btc: pressCount * 0.1 })
+      });
+    } catch {}
+  }
+
+  // ── Matrix rain background ────────────────────
+  (function() {
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    const chars = '₿01アイウエオ0123456789ABCDEF';
+    let cols, drops;
+    function resize() {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+      cols = Math.floor(canvas.width / 20);
+      drops = Array(cols).fill(1);
+    }
+    resize();
+    addEventListener('resize', resize);
+    setInterval(() => {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#f7931a';
+      ctx.font = '14px monospace';
+      for (let i = 0; i < cols; i++) {
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 20, drops[i] * 20);
+        if (drops[i] * 20 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }, 50);
+  })();
+
+  // ── Touch device detection ────────────────────
+  const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if (isTouchDevice) {
+    document.getElementById('start-hint-text').innerHTML = '點擊螢幕開始';
+    document.getElementById('game-hint-text').textContent = '快速觸碰螢幕！';
+  }
+
+  // ── Game constants ────────────────────────────
+  const TOTAL_TIME = 10;
+  const CIRCUMFERENCE = 2 * Math.PI * 52; // 326.73
+
+  // ── Game state ────────────────────────────────
+  let state = 'idle'; // idle | countdown | playing | result | lb
+  let presses = 0;
+  let timeLeft = TOTAL_TIME;
+  let gameInterval = null;
+  let scoreSubmitted = false;
+
+  // ── Screen management ─────────────────────────
+  const screens = {
+    idle:   document.getElementById('idle-screen'),
+    game:   document.getElementById('game-screen'),
+    result: document.getElementById('result-screen'),
+    lb:     document.getElementById('lb-screen'),
+  };
+
+  function showScreen(name) {
+    Object.keys(screens).forEach(k => {
+      screens[k].classList.toggle('hidden', k !== name);
+    });
+    // Enable/disable body touch-action
+    if (name === 'game') {
+      document.body.classList.add('game-active');
+    } else {
+      document.body.classList.remove('game-active');
+    }
+  }
+
+  // ── Display updates ───────────────────────────
+  function updateGameDisplay() {
+    document.getElementById('game-btc-display').textContent = (presses * 0.1).toFixed(4);
+    document.getElementById('press-count').textContent = presses;
+  }
+
+  function updateTimer() {
+    document.getElementById('timer-num').textContent = timeLeft;
+    const arc = document.getElementById('timer-arc');
+    arc.style.strokeDashoffset = CIRCUMFERENCE * (1 - timeLeft / TOTAL_TIME);
+    arc.classList.toggle('urgent', timeLeft <= 3);
+  }
+
+  // ── Wallet animations ─────────────────────────
+  function flashSlot() {
+    const slot = document.getElementById('slot-game');
+    slot.classList.add('flash');
+    setTimeout(() => slot.classList.remove('flash'), 110);
+  }
+
+  function bumpBtc() {
+    const el = document.getElementById('game-btc-display');
+    el.classList.add('bump');
+    setTimeout(() => el.classList.remove('bump'), 110);
+  }
+
+  function walletPressed() {
+    const w = document.getElementById('wallet-game');
+    w.classList.add('pressed');
+    setTimeout(() => w.classList.remove('pressed'), 140);
+  }
+
+  function spawnParticles(x, y) {
+    for (let i = 0; i < 7; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 25 + Math.random() * 45;
+      p.style.cssText = `left:${x}px;top:${y}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 600);
+    }
+  }
+
+  // ── Countdown 3-2-1 ──────────────────────────
+  function runCountdown(callback) {
+    const el = document.getElementById('countdown-display');
+    let n = 3;
+    function tick() {
+      el.textContent = n;
+      el.className = '';
+      void el.offsetWidth; // reflow to restart animation
+      el.className = 'countdown-num show';
+      n--;
+      if (n >= 0) setTimeout(tick, 850);
+      else setTimeout(() => { el.className = 'countdown-num'; callback(); }, 850);
+    }
+    tick();
+  }
+
+  // ── Start game ────────────────────────────────
+  function startGame() {
+    if (state !== 'idle') return;
+    state = 'countdown';
+    showScreen('game');
+    presses = 0;
+    timeLeft = TOTAL_TIME;
+    scoreSubmitted = false;
+    updateGameDisplay();
+    updateTimer();
+    document.getElementById('timer-arc').classList.remove('urgent');
+
+    runCountdown(() => {
+      state = 'playing';
+      gameInterval = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+        if (timeLeft <= 0) {
+          clearInterval(gameInterval);
+          endGame();
+        }
+      }, 1000);
+    });
+  }
+
+  // ── Register a press ──────────────────────────
+  function onPress() {
+    if (state !== 'playing') return;
+    presses++;
+    updateGameDisplay();
+    flashSlot();
+    bumpBtc();
+    walletPressed();
+    // Spawn particles at wallet center
+    const w = document.getElementById('wallet-game');
+    const r = w.getBoundingClientRect();
+    spawnParticles(r.left + r.width / 2, r.top + r.height * 0.65);
+  }
+
+  // ── End game ──────────────────────────────────
+  async function endGame() {
+    state = 'result';
+    document.body.classList.remove('game-active');
+
+    const btc = (presses * 0.1).toFixed(4);
+    document.getElementById('result-btc-num').textContent = btc;
+    document.getElementById('result-presses').textContent = presses;
+    document.getElementById('result-rate').textContent = (presses / TOTAL_TIME).toFixed(1);
+
+    // Result message
+    const msgs = [
+      [0,  0,  '你忘記按了嗎？<strong>試試看！</strong>'],
+      [1,  9,  '還不錯的開始，繼續加油！'],
+      [10, 19, '你的手速不慢，繼續練習！'],
+      [20, 34, '印象深刻！你真的很認真在存幣。'],
+      [35, 49, '你的手指是電動的嗎？<strong>驚人！</strong>'],
+      [50, Infinity, '<strong>傳說級存幣者</strong>，Satoshi 本人！'],
+    ];
+    const m = msgs.find(([lo, hi]) => presses >= lo && presses <= hi);
+    document.getElementById('result-msg').innerHTML = m ? m[2] : '';
+
+    showScreen('result');
+
+    // Load leaderboard and check if top 10
+    document.getElementById('result-lb-content').innerHTML = '<div class="lb-loading">載入中…</div>';
+    document.getElementById('name-entry').style.display = 'none';
+
+    const lb = await fetchLeaderboard();
+    renderLbContent(document.getElementById('result-lb-content'), lb, -1);
+
+    // Check if qualifies for top 10
+    if (HAS_BACKEND && presses > 0) {
+      const qualifies = !lb || lb.length < 10 || presses > lb[lb.length - 1].presses;
+      if (qualifies) {
+        document.getElementById('name-entry').style.display = 'flex';
+        document.getElementById('name-input').focus();
+      }
+    }
+  }
+
+  // ── Render leaderboard rows ───────────────────
+  function renderLbContent(container, rows, highlightPresses) {
+    if (!HAS_BACKEND) {
+      container.innerHTML = '<div class="lb-empty">排行榜需要後端設定<br><small style="font-size:10px;opacity:0.5;">（請設定 Supabase 憑證）</small></div>';
+      return;
+    }
+    if (!rows || rows.length === 0) {
+      container.innerHTML = '<div class="lb-empty">目前沒有紀錄，成為第一名！</div>';
+      return;
+    }
+    const medals = ['🥇','🥈','🥉'];
+    container.innerHTML = rows.map((r, i) => {
+      const rank = medals[i] || `#${i+1}`;
+      const rankClass = i < 3 ? `r${i+1}` : '';
+      const hl = highlightPresses > 0 && r.presses === highlightPresses ? ' highlight' : '';
+      return `<div class="lb-row${hl}">
+        <div class="lb-rank ${rankClass}">${rank}</div>
+        <div class="lb-name">${escHtml(r.name)}</div>
+        <div class="lb-btc">${Number(r.btc).toFixed(4)}</div>
+        <div class="lb-presses">${r.presses}次</div>
+      </div>`;
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ── Submit name to leaderboard ────────────────
+  document.getElementById('btn-submit-name').addEventListener('click', async () => {
+    const name = document.getElementById('name-input').value.trim();
+    if (!name) { document.getElementById('name-input').focus(); return; }
+    const btn = document.getElementById('btn-submit-name');
+    btn.disabled = true;
+    btn.textContent = '提交中…';
+    await submitScore(name, presses);
+    scoreSubmitted = true;
+    document.getElementById('name-entry').style.display = 'none';
+    // Refresh leaderboard
+    const lb = await fetchLeaderboard();
+    renderLbContent(document.getElementById('result-lb-content'), lb, presses);
+  });
+
+  // ── Full leaderboard screen ───────────────────
+  document.getElementById('lb-btn-idle').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    state = 'lb';
+    showScreen('lb');
+    document.getElementById('lb-full-content').innerHTML = '<div class="lb-loading">載入中…</div>';
+    const lb = await fetchLeaderboard();
+    renderLbContent(document.getElementById('lb-full-content'), lb, -1);
+  });
+
+  document.getElementById('lb-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    state = 'idle';
+    showScreen('idle');
+  });
+
+  // ── Restart ───────────────────────────────────
+  document.getElementById('btn-restart').addEventListener('click', (e) => {
+    e.stopPropagation();
+    state = 'idle';
+    showScreen('idle');
+  });
+
+  // ══════════════════════════════════════════════
+  // ── Input handling (keyboard + touch) ─────────
+  // ══════════════════════════════════════════════
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space') return;
+    e.preventDefault();
+    if (state === 'idle') startGame();
+    else if (state === 'playing') onPress();
+  });
+
+  // Touch — count EACH finger individually, no waiting for click
+  document.addEventListener('touchstart', (e) => {
+    // Don't intercept button taps
+    const tag = e.target.tagName;
+    if (tag === 'BUTTON' || tag === 'INPUT' || e.target.closest('button, input')) return;
+
+    if (state === 'idle') {
+      e.preventDefault();
+      startGame();
+    } else if (state === 'playing') {
+      e.preventDefault();
+      // Each changed touch = one press
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        onPress();
+      }
+    }
+  }, { passive: false });
+
+  // Click fallback (desktop non-space, trackpad tap)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('button, input')) return;
+    if (state === 'idle') startGame();
+    else if (state === 'playing') onPress();
+  });
+</script>
+</body>
+</html>
