@@ -921,21 +921,21 @@
     else if (state === 'playing') onPress();
   });
 
-  // Touch — 40ms throttle prevents simultaneous multi-finger spam
-  // while allowing fast 2-finger alternating tapping naturally
-  let lastTouchPressTime = 0;
-  const TOUCH_THROTTLE_MS = 0; // 暫時關閉限制，測試中
-
+  // Touch — 20ms global throttle
+  let lastPressTime = 0;
   document.addEventListener('touchstart', (e) => {
     if (e.target.closest('button, input')) return;
     if (state === 'idle') {
       e.preventDefault();
       startGame();
-    } else if (state === 'playing') {
-      e.preventDefault();
-      const now = Date.now();
-      if (now - lastTouchPressTime >= TOUCH_THROTTLE_MS) {
-        lastTouchPressTime = now;
+      return;
+    }
+    if (state !== 'playing') return;
+    e.preventDefault();
+    const now = Date.now();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (now - lastPressTime >= 30) {
+        lastPressTime = now;
         onPress();
       }
     }
